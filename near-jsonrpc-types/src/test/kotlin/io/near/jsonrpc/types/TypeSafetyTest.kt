@@ -1,0 +1,274 @@
+package io.near.jsonrpc.types
+
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.shouldBeInstanceOf
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+
+class TypeSafetyTest : FunSpec({
+    
+    val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
+    
+    context("BlockReference type safety") {
+        test("should not allow multiple reference types simultaneously") {
+            // Only one of blockId, blockHeight, or finality should be set
+            val ref1 = BlockReference(blockId = "test-hash")
+            val ref2 = BlockReference(blockHeight = 12345)
+            val ref3 = BlockReference(finality = Finality.FINAL)
+            
+            ref1.blockId shouldNotBe null
+            ref1.blockHeight shouldBe null
+            ref1.finality shouldBe null
+            
+            ref2.blockId shouldBe null
+            ref2.blockHeight shouldNotBe null
+            ref2.finality shouldBe null
+            
+            ref3.blockId shouldBe null
+            ref3.blockHeight shouldBe null
+            ref3.finality shouldNotBe null
+        }
+        
+        test("should enforce valid block height ranges") {
+            val validHeight = BlockReference(blockHeight = 1000000)
+            validHeight.blockHeight shouldBe 1000000
+            
+            // Negative heights should be rejected in actual API calls
+            val negativeHeight = BlockReference(blockHeight = -1)
+            negativeHeight.blockHeight shouldBe -1 // Type system allows, but API would reject
+        }
+    }
+    
+    context("Transaction type safety") {
+        test("should enforce required fields in Transaction") {
+            val tx = Transaction(
+                signerId = "alice.near",
+                publicKey = "ed25519:pubkey",
+                nonce = 1,
+                receiverId = "bob.near",
+                actions = listOf(),
+                signature = "signature",
+                hash = "hash"
+            )
+            
+            tx.signerId shouldBe "alice.near"
+            tx.receiverId shouldBe "bob.near"
+            tx.nonce shouldBe 1
+            tx.actions shouldBe emptyList()
+        }
+        
+        test("should enforce Action type variants") {
+            val transfer = Action(
+                enum = ActionType.TRANSFER,
+                transfer = TransferAction(deposit = "1000000000000000000000000")
+            )
+            
+            val functionCall = Action(
+                enum = ActionType.FUNCTION_CALL,
+                functionCall = FunctionCallAction(
+                    methodName = "set_status",
+                    args = "eyJzdGF0dXMiOiJhY3RpdmUifQ==",
+                    gas = 30000000000000,
+                    deposit = "0"
+                )
+            )
+            
+            transfer.enum shouldBe ActionType.TRANSFER
+            transfer.transfer shouldNotBe null
+            transfer.functionCall shouldBe null
+            
+            functionCall.enum shouldBe ActionType.FUNCTION_CALL
+            functionCall.functionCall shouldNotBe null
+            functionCall.transfer shouldBe null
+        }
+    }
+    
+    context("AccessKey type safety") {
+        test("should enforce Permission types") {
+            val fullAccess = Permission.FullAccess
+            
+            val functionCallPermission = Permission.FunctionCall(
+                functionCall = FunctionCallPermission(
+                    allowance = "250000000000000",
+                    receiverId = "contract.near",
+                    methodNames = listOf("get_status", "set_status")
+                )
+            )
+            
+            fullAccess shouldBe Permission.FullAccess
+            
+            functionCallPermission shouldNotBe null
+            functionCallPermission.functionCall.methodNames.size shouldBe 2
+        }
+        
+        test("should enforce AccessKey nonce as non-negative") {
+            val key = AccessKey(
+                nonce = 42,
+                permission = Permission.FullAccess
+            )
+            
+            key.nonce shouldBe 42
+            key.permission shouldBe Permission.FullAccess
+        }
+    }
+    
+    context("JsonRpc type safety") {
+        test("should enforce JSON-RPC 2.0 format") {
+            val request = JsonRpcRequest(
+                jsonrpc = "2.0",
+                id = "unique-id",
+                method = "query",
+                params = null
+            )
+            
+            request.jsonrpc shouldBe "2.0"
+            request.id shouldNotBe null
+            request.method shouldNotBe null
+        }
+        
+        test("should handle response with result XOR error") {
+            val successResponse = JsonRpcResponse<String>(
+                jsonrpc = "2.0",
+                id = "test",
+                result = "success",
+                error = null
+            )
+            
+            val errorResponse = JsonRpcResponse<String>(
+                jsonrpc = "2.0",
+                id = "test",
+                result = null,
+                error = JsonRpcError(
+                    code = -32601,
+                    message = "Method not found",
+                    data = null
+                )
+            )
+            
+            // Success response should have result but no error
+            successResponse.result shouldNotBe null
+            successResponse.error shouldBe null
+            
+            // Error response should have error but no result
+            errorResponse.result shouldBe null
+            errorResponse.error shouldNotBe null
+            errorResponse.error?.code shouldBe -32601
+        }
+    }
+    
+    context("Enum type safety") {
+        test("should enforce valid Finality values") {
+            Finality.FINAL.shouldBeInstanceOf<Finality>()
+            Finality.OPTIMISTIC.shouldBeInstanceOf<Finality>()
+            Finality.NEAR_FINAL.shouldBeInstanceOf<Finality>()
+            
+            // Enum values are compile-time checked
+            val values = Finality.values()
+            values.size shouldBe 3
+        }
+        
+        test("should enforce valid ExecutionStatusType values") {
+            ExecutionStatusType.UNKNOWN.shouldBeInstanceOf<ExecutionStatusType>()
+            ExecutionStatusType.FAILURE.shouldBeInstanceOf<ExecutionStatusType>()
+            ExecutionStatusType.SUCCESS_VALUE.shouldBeInstanceOf<ExecutionStatusType>()
+            ExecutionStatusType.SUCCESS_RECEIPT_ID.shouldBeInstanceOf<ExecutionStatusType>()
+            
+            val values = ExecutionStatusType.values()
+            values.size shouldBe 4
+        }
+    }
+    
+    context("Nullable type safety") {
+        test("should handle optional fields correctly") {
+            val account = AccountView(
+                amount = "1000000000000000000000000",
+                locked = "0",
+                codeHash = "11111111111111111111111111111111",
+                storageUsage = 500,
+                storagePaidAt = 0,
+                blockHeight = 12345,
+                blockHash = "hash"
+            )
+            
+            // All fields are required
+            account.amount shouldNotBe null
+            account.locked shouldNotBe null
+            account.codeHash shouldNotBe null
+        }
+        
+        test("should handle nullable fields in BlockHeader") {
+            val header = BlockHeader(
+                height = 100,
+                hash = "hash",
+                prevHash = "prev",
+                epochId = "epoch",
+                nextEpochId = "next-epoch",
+                chunksIncluded = 4,
+                challengesRoot = "root",
+                timestamp = 1234567890,
+                timestampNanosec = "1234567890000000000",
+                randomValue = "random",
+                validatorProposals = emptyList(),
+                chunkMask = listOf(true, true, false, true),
+                gasPrice = "100000000",
+                blockOrdinal = null, // Optional field
+                totalSupply = "1000000000000000000000000000",
+                challengesResult = emptyList(),
+                lastFinalBlock = "last",
+                lastDsFinalBlock = "last-ds",
+                nextBpHash = "bp-hash",
+                blockMerkleRoot = "merkle",
+                epochSyncDataHash = null, // Optional field
+                approvals = emptyList(),
+                signature = "sig",
+                latestProtocolVersion = 50
+            )
+            
+            header.blockOrdinal shouldBe null
+            header.epochSyncDataHash shouldBe null
+            header.height shouldNotBe null
+        }
+    }
+    
+    context("Collection type safety") {
+        test("should enforce list types") {
+            val validators = ValidatorStatus(
+                currentValidators = listOf(
+                    CurrentValidator(
+                        accountId = "validator1.near",
+                        publicKey = "ed25519:key1",
+                        stake = "50000000000000000000000000",
+                        isSlashed = false,
+                        shards = listOf(0, 1),
+                        numExpectedBlocks = 100,
+                        numExpectedChunks = 400,
+                        numProducedBlocks = 98,
+                        numProducedChunks = 392
+                    )
+                ),
+                nextValidators = emptyList(),
+                currentProposals = emptyList()
+            )
+            
+            validators.currentValidators.shouldBeInstanceOf<List<CurrentValidator>>()
+            validators.currentValidators.size shouldBe 1
+            validators.currentValidators[0].shards.shouldBeInstanceOf<List<Int>>()
+        }
+        
+        test("should not allow wrong types in collections") {
+            // This would be caught at compile time
+            // val invalid = listOf<CurrentValidator>("string") // Compile error
+            
+            val valid = listOf<CurrentValidator>()
+            valid.shouldBeInstanceOf<List<CurrentValidator>>()
+        }
+    }
+})

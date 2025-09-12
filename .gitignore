@@ -1,0 +1,41 @@
+# Gradle
+.gradle/
+build/
+out/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Generated files
+generated/
+openapi-spec.json
+openapi-spec-cached.json
+
+# Local configuration
+local.properties
+
+# Logs
+*.log
+
+# Test reports
+test-results/
+reports/

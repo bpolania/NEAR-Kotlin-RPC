@@ -1,0 +1,71 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: google-github-actions/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: simple
+          package-name: near-kotlin-rpc
+          
+      # The following steps only run if a release was created
+      - uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.release_created }}
+        
+      - name: Set up JDK 11
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          
+      - name: Grant execute permission for gradlew
+        if: ${{ steps.release.outputs.release_created }}
+        run: chmod +x gradlew
+        
+      - name: Update version in build.gradle.kts
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          VERSION=${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }}.${{ steps.release.outputs.patch }}
+          sed -i "s/version = \".*\"/version = \"$VERSION\"/" build.gradle.kts
+          
+      - name: Build release artifacts
+        if: ${{ steps.release.outputs.release_created }}
+        run: ./gradlew build
+        
+      - name: Publish to Maven Central
+        if: ${{ steps.release.outputs.release_created }}
+        run: ./gradlew publish
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          SIGNING_KEY_ID: ${{ secrets.SIGNING_KEY_ID }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+          
+      - name: Publish to GitHub Packages
+        if: ${{ steps.release.outputs.release_created }}
+        run: ./gradlew publishAllPublicationsToGitHubPackagesRepository
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Upload release artifacts
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ steps.release.outputs.tag_name }} \
+            near-jsonrpc-types/build/libs/*.jar \
+            near-jsonrpc-client/build/libs/*.jar
