@@ -23,19 +23,31 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     
-    - name: Build with Gradle
-      run: ./gradlew build
+    - name: Build without tests
+      run: ./gradlew build -x test
     
     - name: Run tests
-      run: ./gradlew test
+      run: ./gradlew test --info
+      timeout-minutes: 10
       env:
         NEAR_TESTNET_RPC_URL: https://white-shy-fire.near-testnet.quiknode.pro/1c9f76d8dab07f1657d6aebc20441c38e81265e5
     
     - name: Generate test report
       run: ./gradlew jacocoRootReport
+      if: always()
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: |
+          **/build/reports/tests/
+          **/build/test-results/
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
+      if: always()
       with:
         files: ./build/reports/jacoco/jacocoRootReport/jacocoRootReport.xml
         flags: unittests

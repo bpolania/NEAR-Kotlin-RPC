@@ -84,7 +84,7 @@ subprojects {
 tasks.register<GenerateTask>("generateNearRpcFromOpenApi") {
     generatorName.set("kotlin")
     inputSpec.set("$rootDir/openapi-spec.json")
-    outputDir.set("$buildDir/generated")
+    outputDir.set("${layout.buildDirectory.get()}/generated")
     apiPackage.set("io.near.jsonrpc.api")
     modelPackage.set("io.near.jsonrpc.models")
     configOptions.set(mapOf(
