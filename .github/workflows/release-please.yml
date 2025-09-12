@@ -1,9 +1,12 @@
 name: Release Please
 
 on:
-  push:
-    branches:
-      - main
+  # Temporarily disabled until properly configured
+  # Uncomment when ready to enable automated releases
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main
 
 permissions:
   contents: write
