@@ -50,7 +50,7 @@ jobs:
       if: always()
     
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-results
@@ -59,13 +59,14 @@ jobs:
           **/build/test-results/
     
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       if: always()
       with:
         files: ./build/reports/jacoco/jacocoRootReport/jacocoRootReport.xml
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
 
 
   publish:
