@@ -6,6 +6,7 @@ plugins {
     kotlin("plugin.serialization") version "1.9.22" apply false
     id("org.openapi.generator") version "7.2.0"
     id("maven-publish")
+    id("jacoco")
 }
 
 allprojects {
@@ -20,6 +21,7 @@ allprojects {
 subprojects {
     apply(plugin = "org.jetbrains.kotlin.jvm")
     apply(plugin = "maven-publish")
+    apply(plugin = "jacoco")
 
     tasks.withType<KotlinCompile> {
         kotlinOptions {
@@ -44,6 +46,22 @@ subprojects {
         systemProperty("skipIntegrationTests", System.getProperty("skipIntegrationTests") ?: "false")
         // Use QuickNode endpoint by default for better rate limits
         environment("NEAR_TESTNET_RPC_URL", System.getenv("NEAR_TESTNET_RPC_URL") ?: "https://white-shy-fire.near-testnet.quiknode.pro/1c9f76d8dab07f1657d6aebc20441c38e81265e5")
+    }
+    
+    // Configure JaCoCo after evaluation
+    afterEvaluate {
+        tasks.named("test") {
+            finalizedBy(tasks.named("jacocoTestReport"))
+        }
+        
+        tasks.named<JacocoReport>("jacocoTestReport") {
+            dependsOn(tasks.named("test"))
+            reports {
+                xml.required.set(true)
+                html.required.set(true)
+                csv.required.set(false)
+            }
+        }
     }
 
     dependencies {
@@ -108,4 +126,37 @@ tasks.register("testUnit") {
         System.setProperty("skipIntegrationTests", "true")
     }
     dependsOn(subprojects.map { it.tasks.named("test") })
+}
+
+// Aggregate JaCoCo coverage report
+tasks.register<JacocoReport>("jacocoRootReport") {
+    description = "Generate aggregated JaCoCo coverage report for all modules"
+    group = "verification"
+    
+    dependsOn(subprojects.map { it.tasks.named("test") })
+    
+    sourceDirectories.setFrom(subprojects.map { 
+        it.layout.projectDirectory.dir("src/main/kotlin")
+    })
+    
+    classDirectories.setFrom(subprojects.map {
+        it.layout.buildDirectory.dir("classes/kotlin/main")
+    })
+    
+    executionData.setFrom(subprojects.map {
+        it.layout.buildDirectory.file("jacoco/test.exec")
+    })
+    
+    reports {
+        html.required.set(true)
+        xml.required.set(true)
+        csv.required.set(false)
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/aggregate"))
+    }
+}
+
+tasks.register("testWithCoverage") {
+    description = "Run all tests and generate coverage report"
+    group = "verification"
+    dependsOn("testAll", "jacocoRootReport")
 }
