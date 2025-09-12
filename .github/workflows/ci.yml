@@ -26,8 +26,17 @@ jobs:
     - name: Build without tests
       run: ./gradlew build -x test
     
+    - name: Check environment
+      run: |
+        echo "Java version:"
+        java -version
+        echo "Gradle version:"
+        ./gradlew --version
+        echo "Test classes:"
+        find . -name "*Test.class" -type f | wc -l
+    
     - name: Run tests
-      run: ./gradlew test --info
+      run: ./gradlew test --no-daemon
       timeout-minutes: 10
       env:
         NEAR_TESTNET_RPC_URL: https://white-shy-fire.near-testnet.quiknode.pro/1c9f76d8dab07f1657d6aebc20441c38e81265e5
