@@ -98,6 +98,18 @@ fun main() = runBlocking {
 }
 ```
 
+## Sample Android App
+
+A sample Android wallet application demonstrating the use of this library is available at [https://github.com/bpolania/NearKotlin](https://github.com/bpolania/NearKotlin) (under development).
+
+The sample app demonstrates:
+- Wallet creation and key management
+- Multiple account support
+- NEP-141 token tracking
+- Balance viewing
+- Network switching (Testnet/Mainnet)
+- Modern UI with Jetpack Compose
+
 ### Running the Example
 
 The project includes a comprehensive example demonstrating various RPC methods:
