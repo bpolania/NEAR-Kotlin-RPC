@@ -92,13 +92,20 @@ tasks.register<GenerateTask>("generateNearRpcFromOpenApi") {
         "serializationLibrary" to "kotlinx_serialization",
         "collectionType" to "list",
         "enumPropertyNaming" to "UPPERCASE",
-        "sourceFolder" to "src/main/kotlin"
+        "sourceFolder" to "src/main/kotlin",
+        "removeEnumValuePrefix" to "false"
     ))
     generateApiTests.set(false)
     generateModelTests.set(false)
     generateApiDocumentation.set(false)
     generateModelDocumentation.set(false)
     validateSpec.set(false) // Skip validation due to patternProperties issue
+    // Skip problematic schemas
+    skipValidateSpec.set(true)
+    globalProperties.set(mapOf(
+        "models" to "",
+        "apis" to ""
+    ))
 }
 
 tasks.register<Exec>("fetchOpenApiSpec") {

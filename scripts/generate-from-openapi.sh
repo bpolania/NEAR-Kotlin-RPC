@@ -21,46 +21,20 @@ if [ ! -f "$OPENAPI_SPEC_FILE" ]; then
     exit 1
 fi
 
-echo "2. Applying fixes to OpenAPI specification..."
-python3 "$SCRIPT_DIR/openapi_fixes.py" --spec-fix "$OPENAPI_SPEC_FILE"
-
-echo "3. Running Gradle task to generate Kotlin code..."
+echo "2. Building KotlinPoet generator..."
 cd "$PROJECT_ROOT"
-./gradlew generateNearRpcFromOpenApi
+./gradlew :generator:build
 
-echo "4. Applying post-generation fixes to Kotlin code..."
-python3 "$SCRIPT_DIR/openapi_fixes.py" --code-fix "$GENERATED_DIR"
-
-echo "5. Processing generated code for snake_case to camelCase conversion..."
-if [ -d "$GENERATED_DIR/src/main/kotlin" ]; then
-    python3 "$SCRIPT_DIR/convert_naming.py" "$GENERATED_DIR/src/main/kotlin"
-else
-    echo "Warning: Generated code directory not found, skipping conversion"
-fi
-
-echo "6. Organizing generated code into modules..."
-
-# Create directories if they don't exist
+echo "3. Generating Kotlin models using KotlinPoet generator..."
+# Clean existing generated models
+rm -rf "$PROJECT_ROOT/near-jsonrpc-types/src/main/kotlin/io/near/jsonrpc/types/generated"
 mkdir -p "$PROJECT_ROOT/near-jsonrpc-types/src/main/kotlin/io/near/jsonrpc/types/generated"
-mkdir -p "$PROJECT_ROOT/near-jsonrpc-client/src/main/kotlin/io/near/jsonrpc/client/generated"
 
-# Copy generated models to types module
-if [ -d "$GENERATED_DIR/src/main/kotlin/io/near/jsonrpc/models" ]; then
-    echo "   - Copying models to near-jsonrpc-types module..."
-    cp -r "$GENERATED_DIR/src/main/kotlin/io/near/jsonrpc/models/"* \
-        "$PROJECT_ROOT/near-jsonrpc-types/src/main/kotlin/io/near/jsonrpc/types/generated/" 2>/dev/null || true
-fi
-
-# Copy generated API client to client module  
-if [ -d "$GENERATED_DIR/src/main/kotlin/io/near/jsonrpc/api" ]; then
-    echo "   - Copying API client to near-jsonrpc-client module..."
-    cp -r "$GENERATED_DIR/src/main/kotlin/io/near/jsonrpc/api/"* \
-        "$PROJECT_ROOT/near-jsonrpc-client/src/main/kotlin/io/near/jsonrpc/client/generated/" 2>/dev/null || true
-fi
+# Generate using our KotlinPoet generator
+./gradlew :generator:run --args="--spec $OPENAPI_SPEC_FILE --output $PROJECT_ROOT/near-jsonrpc-types/src/main/kotlin --package io.near.jsonrpc.types.generated"
 
 echo "========================================="
 echo "Code generation complete!"
 echo "Generated files are in:"
 echo "  - Types: near-jsonrpc-types/src/main/kotlin/io/near/jsonrpc/types/generated/"
-echo "  - Client: near-jsonrpc-client/src/main/kotlin/io/near/jsonrpc/client/generated/"
 echo "========================================="
