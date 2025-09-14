@@ -324,12 +324,6 @@ All 245+ types from NEAR's OpenAPI spec are generated, including:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
-
-- NEAR Protocol team for the comprehensive RPC API and OpenAPI specification
-- Square for KotlinPoet, the excellent Kotlin code generation library
-- Kotlin community for kotlinx.serialization and coroutines
-
 ## Support
 
 For issues, questions, or suggestions, please open an issue on [GitHub](https://github.com/bpolania/NEAR-Kotlin-RPC/issues).
