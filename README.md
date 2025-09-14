@@ -2,9 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Kotlin](https://img.shields.io/badge/kotlin-1.9.22-blue.svg?logo=kotlin)](http://kotlinlang.org)
-[![CI](https://github.com/yourusername/near-kotlin-rpc/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/near-kotlin-rpc/actions/workflows/ci.yml)
+[![CI](https://github.com/bpolania/NEAR-Kotlin-RPC/actions/workflows/ci.yml/badge.svg)](https://github.com/bpolania/NEAR-Kotlin-RPC/actions/workflows/ci.yml)
 
-A high-quality, type-safe Kotlin client for NEAR Protocol's JSON-RPC interface. Auto-generated from [NEAR's official OpenAPI specification](https://github.com/near/nearcore/blob/master/chain/jsonrpc/openapi/openapi.json).
+A high-quality, type-safe Kotlin client for NEAR Protocol's JSON-RPC interface. **100% auto-generated** from [NEAR's official OpenAPI specification](https://github.com/near/nearcore/blob/master/chain/jsonrpc/openapi/openapi.json) using a custom KotlinPoet generator.
 
 This project is part of the NEAR Protocol client ecosystem, alongside:
 - [near-jsonrpc-client-rs](https://github.com/near/near-jsonrpc-client-rs) - Rust implementation
@@ -13,22 +13,43 @@ This project is part of the NEAR Protocol client ecosystem, alongside:
 
 ## Features
 
-- **Auto-generated** from NEAR's official OpenAPI specification
+- **100% Auto-generated** from NEAR's official OpenAPI specification
+- **Custom KotlinPoet Generator** handles complex schemas (anyOf, oneOf, empty schemas)
 - **Two packages**: Lightweight types package and full client package
 - **Type-safe** Kotlin data classes with kotlinx.serialization
 - **Coroutine-based** async API for non-blocking operations
 - **Automatic** snake_case to camelCase conversion
-- **Tree-shakable** for optimal bundle size
+- **245+ Generated Types** covering the entire NEAR RPC API
 - **Comprehensive** error handling and validation
-- **80%+ test coverage** with integration tests
-- **CI/CD automation** for keeping up-to-date with nearcore
+- **CI/CD automation** with daily spec synchronization
 
 ## Installation
+
+### From GitHub Packages
+
+Add GitHub Packages repository to your build configuration:
+
+```kotlin
+repositories {
+    mavenCentral()
+    maven {
+        url = uri("https://maven.pkg.github.com/bpolania/NEAR-Kotlin-RPC")
+        credentials {
+            username = project.findProperty("gpr.user") as String? ?: System.getenv("USERNAME")
+            password = project.findProperty("gpr.key") as String? ?: System.getenv("TOKEN")
+        }
+    }
+}
+```
 
 ### Gradle (Kotlin DSL)
 
 ```kotlin
 dependencies {
+    // For types only (lightweight)
+    implementation("io.near:near-jsonrpc-types:1.0.0")
+    
+    // For full client (includes types)
     implementation("io.near:near-jsonrpc-client:1.0.0")
 }
 ```
@@ -37,18 +58,12 @@ dependencies {
 
 ```groovy
 dependencies {
+    // For types only (lightweight)
+    implementation 'io.near:near-jsonrpc-types:1.0.0'
+    
+    // For full client (includes types)
     implementation 'io.near:near-jsonrpc-client:1.0.0'
 }
-```
-
-### Maven
-
-```xml
-<dependency>
-    <groupId>io.near</groupId>
-    <artifactId>near-jsonrpc-client</artifactId>
-    <version>1.0.0</version>
-</dependency>
 ```
 
 ## Quick Start
@@ -121,6 +136,7 @@ The project includes a comprehensive example demonstrating various RPC methods:
 
 ### Advanced Operations
 - `lightClientProof()` - Get light client proof
+- Plus many more experimental methods
 
 ## Configuration
 
@@ -184,8 +200,8 @@ try {
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/near-kotlin-rpc.git
-cd near-kotlin-rpc
+git clone https://github.com/bpolania/NEAR-Kotlin-RPC.git
+cd NEAR-Kotlin-RPC
 
 # Build the project
 ./gradlew build
@@ -193,66 +209,70 @@ cd near-kotlin-rpc
 # Run tests
 ./gradlew test
 
-# Generate code from OpenAPI spec (fetches from nearcore)
+# Generate code from OpenAPI spec (fetches latest from nearcore)
 ./scripts/generate-from-openapi.sh
-
-# Or use Gradle task directly
-./gradlew fetchOpenApiSpec generateNearRpcFromOpenApi
 ```
 
 ### Project Structure
 
 ```
-near-kotlin-rpc/
-├── near-jsonrpc-types/       # Lightweight types package
+NEAR-Kotlin-RPC/
+├── generator/                # Custom KotlinPoet code generator
+│   └── src/main/kotlin/
+│       └── io/near/generator/
+│           ├── KotlinGenerator.kt   # Main generator logic
+│           ├── OpenApiParser.kt     # OpenAPI spec parser
+│           └── Main.kt              # CLI entry point
+├── near-jsonrpc-types/       # Generated type definitions (245+ models)
 ├── near-jsonrpc-client/      # RPC client implementation
 ├── example/                  # Example usage and integration tests
-├── scripts/                  # Code generation scripts
+├── scripts/
 │   └── generate-from-openapi.sh  # Main generation script
 └── .github/workflows/        # CI/CD automation
+```
 
-### Code Generation
+### Code Generation Architecture
 
-This project uses a hybrid approach combining minimal manual types with automated code generation from NEAR's OpenAPI specification.
+This project achieves **100% automation** using a custom KotlinPoet-based generator:
 
-#### Architecture
+#### Why Custom Generator?
 
-- **Development**: Uses minimal stub types in `CoreTypes.kt` for local development
-- **CI/CD**: Automatically generates complete types (500+ models) during the build pipeline
-- **Published packages**: Include the full generated API surface
+- **OpenAPI Generator limitations**: Couldn't handle NEAR's complex OpenAPI spec
+- **Complex schema support**: Properly handles anyOf, oneOf, allOf, and empty schemas
+- **Full control**: Direct control over generated code structure and naming
+- **No post-processing needed**: Generates ready-to-compile Kotlin code
 
 #### Generation Process
 
-The CI pipeline automatically:
+The generation pipeline:
 
-1. Fetches the latest OpenAPI spec from [`nearcore`](https://github.com/near/nearcore/blob/master/chain/jsonrpc/openapi/openapi.json)
-2. Generates 500+ Kotlin model classes using OpenAPI Generator
-3. Applies fixes for JSON-RPC compatibility and Kotlin conventions
-4. Includes generated code in the published Maven packages
+1. **Fetch**: Downloads latest OpenAPI spec from nearcore
+2. **Parse**: Custom parser processes all schema types
+3. **Generate**: KotlinPoet creates type-safe Kotlin classes
+4. **Compile**: Generated code compiles without modifications
 
-#### Local Development
-
-For local development without generation:
 ```bash
-./gradlew build
-```
-
-To generate the full API locally (same as CI):
-```bash
-# Generate all types from OpenAPI spec
+# Run the complete generation pipeline
 ./scripts/generate-from-openapi.sh
 
-# Or using Gradle tasks
-./gradlew fetchOpenApiSpec generateNearRpcFromOpenApi
+# This will:
+# 1. Fetch latest spec from https://github.com/near/nearcore
+# 2. Build the KotlinPoet generator
+# 3. Generate 245+ Kotlin data classes
+# 4. Output to near-jsonrpc-types/src/main/kotlin/io/near/jsonrpc/types/generated/
 ```
 
-Generated code locations (gitignored):
-- `near-jsonrpc-types/src/main/kotlin/io/near/jsonrpc/types/generated/` - 500+ data models
-- `near-jsonrpc-client/src/main/kotlin/io/near/jsonrpc/client/generated/` - Generated API client
+#### CI/CD Integration
+
+GitHub Actions automatically:
+- Checks for OpenAPI spec updates daily
+- Regenerates code when spec changes
+- Runs full test suite
+- Publishes to GitHub Packages
 
 ## Testing
 
-The project includes comprehensive unit tests using Kotest and MockWebServer:
+The project includes comprehensive tests:
 
 ```bash
 # Run all tests
@@ -263,17 +283,41 @@ The project includes comprehensive unit tests using Kotest and MockWebServer:
 
 # View coverage report
 open build/reports/jacoco/test/html/index.html
+
+# Run only unit tests (no network)
+./gradlew test -DskipIntegrationTests=true
 ```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+### Key Points for Contributors
+
+1. **Do not manually edit generated code** - Modify the generator instead
+2. **Generator location**: `generator/src/main/kotlin/io/near/generator/`
+3. **Test your changes**: Ensure generated code compiles and tests pass
+4. **Follow conventions**: Use conventional commits for clear history
+
+## Technical Details
+
+### Generator Features
+
+The custom KotlinPoet generator handles:
+- **Empty schemas** → Converted to Kotlin `object` singletons
+- **anyOf/oneOf** → Sealed classes with proper subtyping
+- **allOf** → Merged properties into single data class
+- **Nullable types** → Proper Kotlin nullable type annotations
+- **Snake_case** → Automatic conversion to camelCase
+- **SerialName** → Preserves original JSON field names
+
+### Generated Types
+
+All 245+ types from NEAR's OpenAPI spec are generated, including:
+- Core types: `AccountId`, `BlockId`, `CryptoHash`
+- Request/Response types: `RpcQueryRequest`, `RpcStatusResponse`
+- Complex unions: `ExecutionStatus`, `ActionView`
+- Nested structures: Full support for deeply nested types
 
 ## License
 
@@ -281,10 +325,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- NEAR Protocol team for the comprehensive RPC API
-- OpenAPI Generator for code generation tools
-- Kotlin community for excellent libraries and tools
+- NEAR Protocol team for the comprehensive RPC API and OpenAPI specification
+- Square for KotlinPoet, the excellent Kotlin code generation library
+- Kotlin community for kotlinx.serialization and coroutines
 
 ## Support
 
-For issues, questions, or suggestions, please open an issue on [GitHub](https://github.com/yourusername/near-kotlin-rpc/issues).
+For issues, questions, or suggestions, please open an issue on [GitHub](https://github.com/bpolania/NEAR-Kotlin-RPC/issues).
