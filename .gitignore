@@ -30,6 +30,10 @@ generated/
 openapi-spec.json
 openapi-spec-cached.json
 
+# Generated source directories (created by CI)
+near-jsonrpc-types/src/main/kotlin/io/near/jsonrpc/types/generated/
+near-jsonrpc-client/src/main/kotlin/io/near/jsonrpc/client/generated/
+
 # Local configuration
 local.properties
 

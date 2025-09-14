@@ -3,6 +3,17 @@ plugins {
     kotlin("plugin.serialization")
 }
 
+// Include generated sources in compilation
+kotlin {
+    sourceSets {
+        main {
+            kotlin.srcDir("src/main/kotlin")
+            // Include generated client API if it exists (CI will generate these)
+            kotlin.srcDir("src/main/kotlin/io/near/jsonrpc/client/generated")
+        }
+    }
+}
+
 dependencies {
     api(project(":near-jsonrpc-types"))
     

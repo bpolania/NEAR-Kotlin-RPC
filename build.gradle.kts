@@ -98,6 +98,7 @@ tasks.register<GenerateTask>("generateNearRpcFromOpenApi") {
     generateModelTests.set(false)
     generateApiDocumentation.set(false)
     generateModelDocumentation.set(false)
+    validateSpec.set(false) // Skip validation due to patternProperties issue
 }
 
 tasks.register<Exec>("fetchOpenApiSpec") {

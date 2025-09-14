@@ -215,28 +215,42 @@ near-kotlin-rpc/
 
 ### Code Generation
 
-This project uses automated code generation from NEAR's OpenAPI specification located at [`nearcore/chain/jsonrpc/openapi/openapi.json`](https://github.com/near/nearcore/blob/master/chain/jsonrpc/openapi/openapi.json). 
+This project uses a hybrid approach combining minimal manual types with automated code generation from NEAR's OpenAPI specification.
 
-The generation process:
+#### Architecture
 
-1. Fetches the latest OpenAPI spec from the nearcore repository
-2. Generates Kotlin code using OpenAPI Generator with kotlinx_serialization
-3. Converts naming from snake_case to camelCase for idiomatic Kotlin
-4. Organizes generated code into appropriate modules (types and client)
+- **Development**: Uses minimal stub types in `CoreTypes.kt` for local development
+- **CI/CD**: Automatically generates complete types (500+ models) during the build pipeline
+- **Published packages**: Include the full generated API surface
 
-To regenerate the code:
+#### Generation Process
 
+The CI pipeline automatically:
+
+1. Fetches the latest OpenAPI spec from [`nearcore`](https://github.com/near/nearcore/blob/master/chain/jsonrpc/openapi/openapi.json)
+2. Generates 500+ Kotlin model classes using OpenAPI Generator
+3. Applies fixes for JSON-RPC compatibility and Kotlin conventions
+4. Includes generated code in the published Maven packages
+
+#### Local Development
+
+For local development without generation:
 ```bash
-# Using the shell script
+./gradlew build
+```
+
+To generate the full API locally (same as CI):
+```bash
+# Generate all types from OpenAPI spec
 ./scripts/generate-from-openapi.sh
 
 # Or using Gradle tasks
 ./gradlew fetchOpenApiSpec generateNearRpcFromOpenApi
 ```
 
-The generated code is placed in:
-- `near-jsonrpc-types/src/main/kotlin/io/near/jsonrpc/types/generated/` - Data models
-- `near-jsonrpc-client/src/main/kotlin/io/near/jsonrpc/client/generated/` - API client
+Generated code locations (gitignored):
+- `near-jsonrpc-types/src/main/kotlin/io/near/jsonrpc/types/generated/` - 500+ data models
+- `near-jsonrpc-client/src/main/kotlin/io/near/jsonrpc/client/generated/` - Generated API client
 
 ## Testing
 
