@@ -38,9 +38,7 @@ near-kotlin-rpc/
 ├── near-jsonrpc-client/      # RPC client implementation
 ├── example/                  # Usage examples and integration tests
 ├── scripts/                  # Code generation scripts
-│   ├── generate-from-openapi.sh
-│   ├── openapi_fixes.py
-│   └── convert_naming.py
+│   └── generate-from-openapi.sh
 └── .github/workflows/        # CI/CD automation
 ```
 
@@ -83,8 +81,8 @@ Or using Gradle:
 ```
 
 **Important:** Do not manually edit generated code. Instead:
-1. Modify the generation scripts if needed
-2. Update `openapi_fixes.py` for pre/post-processing
+1. Modify the KotlinPoet generator if needed
+2. Update the generator in `generator/` module
 3. Regenerate the code
 
 ### Testing
@@ -222,7 +220,7 @@ The client is auto-generated from NEAR's OpenAPI spec. When the spec updates:
 
 If generation fails:
 1. Check the OpenAPI spec for breaking changes
-2. Update `openapi_fixes.py` if needed
+2. Update the KotlinPoet generator if needed
 3. Test thoroughly before merging
 
 ## Release Process

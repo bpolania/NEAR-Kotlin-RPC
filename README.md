@@ -207,10 +207,8 @@ near-kotlin-rpc/
 ├── near-jsonrpc-types/       # Lightweight types package
 ├── near-jsonrpc-client/      # RPC client implementation
 ├── example/                  # Example usage and integration tests
-├── scripts/                  # Code generation and utility scripts
-│   ├── generate-from-openapi.sh
-│   ├── openapi_fixes.py     # Pre/post-processing fixes
-│   └── convert_naming.py    # Snake_case to camelCase converter
+├── scripts/                  # Code generation scripts
+│   └── generate-from-openapi.sh  # Main generation script
 └── .github/workflows/        # CI/CD automation
 
 ### Code Generation
