@@ -4,6 +4,15 @@ plugins {
     application
 }
 
+// Disable publishing for this internal tool
+tasks.withType<PublishToMavenRepository> {
+    enabled = false
+}
+
+tasks.withType<PublishToMavenLocal> {
+    enabled = false
+}
+
 application {
     mainClass.set("io.near.generator.MainKt")
 }

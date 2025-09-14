@@ -3,6 +3,15 @@ plugins {
     application
 }
 
+// Disable publishing for example module
+tasks.withType<PublishToMavenRepository> {
+    enabled = false
+}
+
+tasks.withType<PublishToMavenLocal> {
+    enabled = false
+}
+
 application {
     mainClass.set("io.near.example.MainKt")
 }
