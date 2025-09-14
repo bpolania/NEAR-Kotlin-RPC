@@ -74,24 +74,20 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Create GitHub Release
-      uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ steps.get_version.outputs.VERSION }}
-        body: |
-          NEAR Kotlin RPC SDK Release ${{ steps.get_version.outputs.VERSION }}
-          
-          ## What's Changed
-          See [changelog](https://github.com/${{ github.repository }}/compare/...v${{ steps.get_version.outputs.VERSION }})
-          
-          ## Installation
-          Add to your `build.gradle.kts`:
-          ```kotlin
-          dependencies {
-              implementation("io.near:near-jsonrpc-client:${{ steps.get_version.outputs.VERSION }}")
-          }
-          ```
-        draft: false
-        prerelease: false
+      run: |
+        gh release create "${{ github.ref_name }}" \
+          --title "Release ${{ steps.get_version.outputs.VERSION }}" \
+          --notes "NEAR Kotlin RPC SDK Release ${{ steps.get_version.outputs.VERSION }}
+        
+        ## What's Changed
+        See [changelog](https://github.com/${{ github.repository }}/compare/...v${{ steps.get_version.outputs.VERSION }})
+        
+        ## Installation
+        Add to your \`build.gradle.kts\`:
+        \`\`\`kotlin
+        dependencies {
+            implementation(\"io.near:near-jsonrpc-client:${{ steps.get_version.outputs.VERSION }}\")
+        }
+        \`\`\`"
