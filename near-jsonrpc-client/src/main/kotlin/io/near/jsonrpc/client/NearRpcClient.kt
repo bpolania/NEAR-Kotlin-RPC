@@ -67,10 +67,24 @@ class NearRpcClient(
 
     /**
      * Returns block details by ID.
-     * @param blockId Block hash or block height
+     * @param blockId Block hash, block height, or finality ("final", "optimistic")
      */
     suspend fun block(blockId: String): JsonElement {
-        val params = listOf(blockId)
+        val params = when (blockId) {
+            "final", "optimistic" -> buildJsonObject {
+                put("finality", blockId)
+            }
+            else -> {
+                // Check if it's a number (block height) or hash
+                blockId.toLongOrNull()?.let {
+                    buildJsonObject {
+                        put("block_id", it)
+                    }
+                } ?: buildJsonObject {
+                    put("block_id", blockId)
+                }
+            }
+        }
         return rpcCall("block", params)
     }
 
@@ -309,7 +323,16 @@ class NearRpcClient(
         val paramsJson = when (params) {
             null -> JsonNull
             is JsonElement -> params
-            is List<*> -> json.encodeToJsonElement(params)
+            is List<*> -> JsonArray(params.map { 
+                when (it) {
+                    null -> JsonNull
+                    is String -> JsonPrimitive(it)
+                    is Number -> JsonPrimitive(it)
+                    is Boolean -> JsonPrimitive(it)
+                    is JsonElement -> it
+                    else -> json.encodeToJsonElement(it)
+                }
+            })
             else -> json.encodeToJsonElement(params)
         }
 
