@@ -77,14 +77,22 @@ class OpenApiParser {
                     properties[propName] = parseProperty(propName, propNode)
                 }
                 
-                val required = node.path("required").map { it.asText() }.toSet()
-                
-                SchemaDefinition.Object(
-                    name = name,
-                    properties = properties,
-                    required = required,
-                    description = node.path("description").asText(null)
-                )
+                // If no properties, create Empty type instead
+                if (properties.isEmpty()) {
+                    SchemaDefinition.Empty(
+                        name = name,
+                        description = node.path("description").asText(null)
+                    )
+                } else {
+                    val required = node.path("required").map { it.asText() }.toSet()
+                    
+                    SchemaDefinition.Object(
+                        name = name,
+                        properties = properties,
+                        required = required,
+                        description = node.path("description").asText(null)
+                    )
+                }
             }
             
             // Handle array type
@@ -216,7 +224,8 @@ sealed class SchemaDefinition {
     ) : SchemaDefinition()
     
     data class Empty(
-        override val name: String
+        override val name: String,
+        val description: String? = null
     ) : SchemaDefinition()
 }
 

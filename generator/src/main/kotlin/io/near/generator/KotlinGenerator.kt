@@ -54,18 +54,7 @@ class KotlinGenerator(
     private fun generateDataClass(schema: SchemaDefinition.Object, allSchemas: Map<String, SchemaDefinition>): TypeSpec {
         val className = ClassName(packageName, schema.name)
         
-        // If no properties, generate as object instead of data class
-        if (schema.properties.isEmpty()) {
-            return TypeSpec.objectBuilder(className)
-                .addAnnotation(Serializable::class)
-                .apply {
-                    schema.description?.let {
-                        addKdoc("%L", it)
-                    }
-                }
-                .build()
-        }
-        
+        // Object schemas should always have properties (empty ones become Empty type in parser)
         val builder = TypeSpec.classBuilder(className)
             .addModifiers(KModifier.DATA)
             .addAnnotation(Serializable::class)
@@ -147,10 +136,14 @@ class KotlinGenerator(
     
     private fun generateEmptyType(schema: SchemaDefinition.Empty): TypeSpec {
         // Generate as object (singleton) for empty schemas
-        return TypeSpec.objectBuilder(schema.name)
+        val builder = TypeSpec.objectBuilder(schema.name)
             .addAnnotation(Serializable::class)
-            .addKdoc("Empty schema converted to object")
-            .build()
+        
+        // Add description if present
+        val description = schema.description ?: "Empty schema converted to object"
+        builder.addKdoc("%L", description)
+        
+        return builder.build()
     }
     
     private fun generateTypeAlias(schema: SchemaDefinition.Primitive): TypeSpec? {
@@ -305,21 +298,6 @@ class KotlinGenerator(
             "array" -> LIST.parameterizedBy(ANY.copy(nullable = true))
             "object" -> ClassName("kotlinx.serialization.json", "JsonElement")
             else -> ANY.copy(nullable = true)
-        }
-    }
-    
-    private fun getDefaultValue(type: TypeName): String {
-        return when {
-            type == STRING -> "\"\""
-            type == INT -> "0"
-            type == LONG -> "0L"
-            type == FLOAT -> "0f"
-            type == DOUBLE -> "0.0"
-            type == BOOLEAN -> "false"
-            type.toString().startsWith("kotlin.collections.List") -> "emptyList()"
-            type.toString().startsWith("kotlin.collections.Map") -> "emptyMap()"
-            type.isNullable -> "null"
-            else -> "null"
         }
     }
 }
