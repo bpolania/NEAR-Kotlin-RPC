@@ -270,7 +270,8 @@ def fix_enum_serialization(content: str) -> str:
                 else:
                     fixed_values.append(f'    {value}')
         
-        return f'enum class {enum_name} {{\n{",\n".join(fixed_values)}\n}}'
+        values_str = ",\n".join(fixed_values)
+        return f'enum class {enum_name} {{\n{values_str}\n}}'
     
     content = re.sub(enum_pattern, fix_enum, content, flags=re.DOTALL)
     
