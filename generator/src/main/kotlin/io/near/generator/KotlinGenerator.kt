@@ -327,7 +327,7 @@ class KotlinGenerator(
 // Extension functions for string conversions
 private fun String.snakeToCamelCase(): String {
     return split("_").mapIndexed { index, part ->
-        if (index == 0) part else part.capitalize()
+        if (index == 0) part else part.replaceFirstChar { it.uppercase() }
     }.joinToString("")
 }
 
