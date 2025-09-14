@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Kotlin](https://img.shields.io/badge/kotlin-1.9.22-blue.svg?logo=kotlin)](http://kotlinlang.org)
 [![CI](https://github.com/bpolania/NEAR-Kotlin-RPC/actions/workflows/ci.yml/badge.svg)](https://github.com/bpolania/NEAR-Kotlin-RPC/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-83%25-brightgreen.svg)](https://github.com/bpolania/NEAR-Kotlin-RPC)
 
 A high-quality, type-safe Kotlin client for NEAR Protocol's JSON-RPC interface. **100% auto-generated** from [NEAR's official OpenAPI specification](https://github.com/near/nearcore/blob/master/chain/jsonrpc/openapi/openapi.json) using a custom KotlinPoet generator.
 
@@ -47,10 +48,10 @@ repositories {
 ```kotlin
 dependencies {
     // For types only (lightweight)
-    implementation("io.near:near-jsonrpc-types:1.0.0")
+    implementation("io.near:near-jsonrpc-types:1.1.1")
     
     // For full client (includes types)
-    implementation("io.near:near-jsonrpc-client:1.0.0")
+    implementation("io.near:near-jsonrpc-client:1.1.1")
 }
 ```
 
@@ -59,10 +60,10 @@ dependencies {
 ```groovy
 dependencies {
     // For types only (lightweight)
-    implementation 'io.near:near-jsonrpc-types:1.0.0'
+    implementation 'io.near:near-jsonrpc-types:1.1.1'
     
     // For full client (includes types)
-    implementation 'io.near:near-jsonrpc-client:1.0.0'
+    implementation 'io.near:near-jsonrpc-client:1.1.1'
 }
 ```
 
