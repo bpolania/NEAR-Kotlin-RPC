@@ -1,8 +1,8 @@
-name: CI
+name: Build and Test
 
 on:
   push:
-    branches: [ main ]
+    branches: [ '**' ]  # Run on all branches
   pull_request:
     branches: [ main ]
     types: [ opened, synchronize, reopened ]
@@ -73,39 +73,3 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
 
 
-  publish:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-    
-    - name: Grant execute permission for scripts
-      run: |
-        chmod +x gradlew
-        chmod +x scripts/*.sh
-    
-    - name: Generate code from OpenAPI
-      run: ./scripts/generate-from-openapi.sh
-    
-    - name: Build with generated code
-      run: ./gradlew build -x test
-    
-    - name: Run tests with generated types
-      run: ./gradlew test -DskipStubTests=false -DskipIntegrationTests=true --no-daemon
-    
-    - name: Publish to Maven Local
-      run: ./gradlew publishToMavenLocal
-    
-    - name: Publish to GitHub Packages
-      run: ./gradlew publish
-      env:
-        GITHUB_ACTOR: ${{ github.actor }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
