@@ -45,7 +45,15 @@ data class SyncInfo(
 
 @Serializable
 data class NetworkInfo(
-    @SerialName("num_active_peers") val numActivePeers: Int = 0
+    @SerialName("num_active_peers") val numActivePeers: Int = 0,
+    @SerialName("peer_max_count") val peerMaxCount: Int = 0,
+    @SerialName("active_peers") val activePeers: List<PeerInfo> = emptyList()
+)
+
+@Serializable
+data class PeerInfo(
+    val id: String = "",
+    val addr: String = ""
 )
 
 @Serializable
@@ -58,18 +66,30 @@ data class AccountView(
     val amount: String = "",
     val locked: String = "",
     @SerialName("code_hash") val codeHash: String = "",
-    @SerialName("storage_usage") val storageUsage: Long = 0
+    @SerialName("storage_usage") val storageUsage: Long = 0,
+    @SerialName("block_height") val blockHeight: Long = 0,
+    @SerialName("block_hash") val blockHash: String = ""
 )
 
 @Serializable
 data class AccessKeyView(
     val nonce: Long = 0,
-    val permission: String = ""
+    val permission: String = "",
+    @SerialName("block_height") val blockHeight: Long = 0,
+    @SerialName("block_hash") val blockHash: String = ""
 )
 
 @Serializable
 data class AccessKeyList(
-    val keys: List<String> = emptyList()
+    val keys: List<AccessKeyInfo> = emptyList(),
+    @SerialName("block_height") val blockHeight: Long = 0,
+    @SerialName("block_hash") val blockHash: String = ""
+)
+
+@Serializable
+data class AccessKeyInfo(
+    @SerialName("public_key") val publicKey: String = "",
+    @SerialName("access_key") val accessKey: AccessKeyView = AccessKeyView()
 )
 
 @Serializable
@@ -82,12 +102,40 @@ data class Block(
 @Serializable
 data class BlockHeader(
     val height: Long = 0,
-    val hash: String = ""
+    val hash: String = "",
+    @SerialName("prev_hash") val prevHash: String = "",
+    @SerialName("epoch_id") val epochId: String = "",
+    @SerialName("next_epoch_id") val nextEpochId: String = "",
+    @SerialName("chunks_included") val chunksIncluded: Int = 0,
+    @SerialName("challenges_root") val challengesRoot: String = "",
+    val timestamp: Long = 0,
+    @SerialName("timestamp_nanosec") val timestampNanosec: String = "",
+    @SerialName("random_value") val randomValue: String = "",
+    @SerialName("validator_proposals") val validatorProposals: List<ValidatorProposal> = emptyList(),
+    @SerialName("chunk_mask") val chunkMask: List<Boolean> = emptyList(),
+    @SerialName("gas_price") val gasPrice: String = "",
+    @SerialName("total_supply") val totalSupply: String = "",
+    @SerialName("challenges_result") val challengesResult: List<String> = emptyList(),
+    @SerialName("last_final_block") val lastFinalBlock: String = "",
+    @SerialName("last_ds_final_block") val lastDsFinalBlock: String = "",
+    @SerialName("next_bp_hash") val nextBpHash: String = "",
+    @SerialName("block_merkle_root") val blockMerkleRoot: String = "",
+    val approvals: List<String?> = emptyList(),
+    val signature: String = "",
+    @SerialName("latest_protocol_version") val latestProtocolVersion: Int = 0
+)
+
+@Serializable
+data class ValidatorProposal(
+    @SerialName("account_id") val accountId: String = "",
+    @SerialName("public_key") val publicKey: String = "",
+    val stake: String = ""
 )
 
 @Serializable
 data class ChunkHeader(
-    @SerialName("shard_id") val shardId: Int = 0
+    @SerialName("shard_id") val shardId: Int = 0,
+    @SerialName("chunk_hash") val chunkHash: String = ""
 )
 
 @Serializable
@@ -127,7 +175,9 @@ enum class SyncCheckpoint {
 @Serializable
 data class CallFunctionResponse(
     val result: List<Int> = emptyList(),
-    val logs: List<String> = emptyList()
+    val logs: List<String> = emptyList(),
+    @SerialName("block_height") val blockHeight: Long = 0,
+    @SerialName("block_hash") val blockHash: String = ""
 )
 
 @Serializable
@@ -139,7 +189,35 @@ data class TransactionStatus(
 @Serializable
 data class Transaction(
     val hash: String = "",
-    @SerialName("signer_id") val signerId: String = ""
+    @SerialName("signer_id") val signerId: String = "",
+    @SerialName("public_key") val publicKey: String = "",
+    val nonce: Long = 0,
+    @SerialName("receiver_id") val receiverId: String = "",
+    val actions: List<Action> = emptyList(),
+    val signature: String = ""
+)
+
+@Serializable
+data class Action(
+    val enum: ActionType = ActionType.TRANSFER,
+    val transfer: TransferAction? = null
+)
+
+@Serializable
+enum class ActionType {
+    @SerialName("Transfer") TRANSFER,
+    @SerialName("CreateAccount") CREATE_ACCOUNT,
+    @SerialName("DeployContract") DEPLOY_CONTRACT,
+    @SerialName("FunctionCall") FUNCTION_CALL,
+    @SerialName("Stake") STAKE,
+    @SerialName("AddKey") ADD_KEY,
+    @SerialName("DeleteKey") DELETE_KEY,
+    @SerialName("DeleteAccount") DELETE_ACCOUNT
+}
+
+@Serializable
+data class TransferAction(
+    val deposit: String = ""
 )
 
 @Serializable
@@ -158,6 +236,7 @@ data class ValidatorStatus(
 data class ValidatorInfo(
     @SerialName("account_id") val accountId: String = "",
     val stake: String = "",
+    @SerialName("public_key") val publicKey: String = "",
     @SerialName("num_expected_blocks") val numExpectedBlocks: Long = 0,
     @SerialName("num_produced_blocks") val numProducedBlocks: Long = 0
 )
