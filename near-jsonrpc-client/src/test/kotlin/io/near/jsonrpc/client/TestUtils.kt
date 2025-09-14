@@ -1,18 +1,10 @@
 package io.near.jsonrpc.client
 
 import kotlinx.coroutines.delay
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonObject
+import kotlinx.serialization.json.*
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
-import io.near.jsonrpc.types.*
+import io.near.jsonrpc.types.JsonRpcRequest
 
 /**
  * Test utilities and helper functions
@@ -78,15 +70,15 @@ object TestUtils {
      * Create a block reference for testing
      */
     fun createBlockReference(
-        finality: Finality? = null,
+        finality: String? = null,
         blockId: String? = null,
         blockHeight: Long? = null
-    ): BlockReference {
-        return BlockReference(
-            finality = finality,
-            blockId = blockId,
-            blockHeight = blockHeight
-        )
+    ): JsonObject {
+        return buildJsonObject {
+            finality?.let { put("finality", it) }
+            blockId?.let { put("block_id", it) }
+            blockHeight?.let { put("block_height", it) }
+        }
     }
     
     /**

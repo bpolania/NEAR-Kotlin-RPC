@@ -3,9 +3,8 @@ package io.near.jsonrpc.client
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import io.near.jsonrpc.types.*
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.*
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 
@@ -52,9 +51,11 @@ class NearRpcClientTest : FunSpec({
 
         runBlocking {
             val status = client.status()
-            status.chainId shouldBe "mainnet"
-            status.syncInfo.latestBlockHeight shouldBe 100
-            status.syncInfo.syncing shouldBe false
+            val statusObj = status.jsonObject
+            statusObj["chain_id"]?.jsonPrimitive?.content shouldBe "mainnet"
+            val syncInfo = statusObj["sync_info"]?.jsonObject
+            syncInfo?.get("latest_block_height")?.jsonPrimitive?.int shouldBe 100
+            syncInfo?.get("syncing")?.jsonPrimitive?.boolean shouldBe false
         }
     }
 
@@ -84,9 +85,10 @@ class NearRpcClientTest : FunSpec({
 
         runBlocking {
             val account = client.viewAccount("test.near")
-            account.amount shouldBe "1000000000000000000000000"
-            account.storageUsage shouldBe 1000
-            account.blockHeight shouldBe 50000
+            val accountObj = account.jsonObject
+            accountObj["amount"]?.jsonPrimitive?.content shouldBe "1000000000000000000000000"
+            accountObj["storage_usage"]?.jsonPrimitive?.int shouldBe 1000
+            accountObj["block_height"]?.jsonPrimitive?.int shouldBe 50000
         }
     }
 
@@ -149,9 +151,11 @@ class NearRpcClientTest : FunSpec({
                 methodName = "get_status",
                 argsBase64 = "e30="
             )
-            response.logs.size shouldBe 2
-            response.logs[0] shouldBe "Log message 1"
-            response.blockHeight shouldBe 60000
+            val responseObj = response.jsonObject
+            val logs = responseObj["logs"]?.jsonArray
+            logs?.size shouldBe 2
+            logs?.get(0)?.jsonPrimitive?.content shouldBe "Log message 1"
+            responseObj["block_height"]?.jsonPrimitive?.int shouldBe 60000
         }
     }
 
@@ -199,10 +203,12 @@ class NearRpcClientTest : FunSpec({
         )
 
         runBlocking {
-            val block = client.block(BlockReference(blockHeight = 12345))
-            block.author shouldBe "validator.near"
-            block.header.height shouldBe 12345
-            block.header.gasPrice shouldBe "100000000"
+            val block = client.block("12345")
+            val blockObj = block.jsonObject
+            blockObj["author"]?.jsonPrimitive?.content shouldBe "validator.near"
+            val header = blockObj["header"]?.jsonObject
+            header?.get("height")?.jsonPrimitive?.int shouldBe 12345
+            header?.get("gas_price")?.jsonPrimitive?.content shouldBe "100000000"
         }
     }
 })

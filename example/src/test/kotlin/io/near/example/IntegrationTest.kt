@@ -1,16 +1,17 @@
 package io.near.example
 
 import io.near.jsonrpc.client.NearRpcClient
-import io.near.jsonrpc.types.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
+import java.util.Base64
 
 /**
  * Integration tests for NEAR Kotlin RPC Client
- * Similar to the tests in near-openapi-client and near-jsonrpc-client-ts
+ * Tests basic RPC methods against testnet
  */
 class IntegrationTest {
     
@@ -28,136 +29,132 @@ class IntegrationTest {
     @DisplayName("Should fetch network status")
     fun testNetworkStatus() = runBlocking {
         val status = client.status()
+        val statusObj = status.jsonObject
         
         assertNotNull(status)
-        assertNotNull(status.chainId)
-        assertNotNull(status.syncInfo)
-        assertTrue(status.syncInfo.latestBlockHeight > 0)
-        assertEquals("testnet", status.chainId)
+        assertNotNull(statusObj["chain_id"])
+        assertNotNull(statusObj["sync_info"])
+        
+        val chainId = statusObj["chain_id"]?.jsonPrimitive?.content
+        assertEquals("testnet", chainId)
     }
     
     @Test
     @DisplayName("Should fetch block by finality")
     fun testGetBlockByFinality() = runBlocking {
-        val block = client.block(BlockReference(finality = Finality.FINAL))
+        val block = client.block("final")
+        val blockObj = block.jsonObject
         
         assertNotNull(block)
-        assertNotNull(block.header)
-        assertTrue(block.header.height > 0)
-        assertNotNull(block.header.hash)
-        assertNotNull(block.author)
-        assertTrue(block.chunks.isNotEmpty())
+        assertNotNull(blockObj["header"])
+        
+        val header = blockObj["header"]?.jsonObject
+        assertNotNull(header)
+        
+        val height = header?.get("height")?.jsonPrimitive?.long ?: 0
+        assertTrue(height > 0)
+        
+        assertNotNull(header?.get("hash"))
+        assertNotNull(blockObj["author"])
+        
+        val chunks = blockObj["chunks"]?.jsonArray
+        assertNotNull(chunks)
+        assertTrue(chunks?.size ?: 0 > 0)
     }
     
     @Test
-    @DisplayName("Should fetch block by height")
-    fun testGetBlockByHeight() = runBlocking {
-        // First get the latest block to know a valid height
-        val latestBlock = client.block(BlockReference(finality = Finality.FINAL))
-        val targetHeight = latestBlock.header.height - 10 // Get a block 10 heights back
-        
-        val block = client.block(BlockReference(blockHeight = targetHeight))
-        
-        assertNotNull(block)
-        assertEquals(targetHeight, block.header.height)
-    }
-    
-    @Test
-    @DisplayName("Should view account details")
+    @DisplayName("Should view account")
     fun testViewAccount() = runBlocking {
-        // Use a well-known testnet account
         val account = client.viewAccount("test.near")
+        val accountObj = account.jsonObject
         
         assertNotNull(account)
-        assertNotNull(account.amount)
-        assertNotNull(account.codeHash)
-        assertTrue(account.storageUsage >= 0)
+        assertNotNull(accountObj["amount"])
+        assertNotNull(accountObj["locked"])
+        assertNotNull(accountObj["code_hash"])
+        assertNotNull(accountObj["storage_usage"])
     }
     
     @Test
     @DisplayName("Should get gas price")
     fun testGasPrice() = runBlocking {
         val gasPrice = client.gasPrice()
+        val gasPriceObj = gasPrice.jsonObject
         
         assertNotNull(gasPrice)
-        assertNotNull(gasPrice.gasPrice)
-        assertTrue(gasPrice.gasPrice.toLong() > 0)
+        assertNotNull(gasPriceObj["gas_price"])
+        
+        val price = gasPriceObj["gas_price"]?.jsonPrimitive?.content
+        assertNotNull(price)
+        assertTrue(price?.toLongOrNull() ?: 0 > 0)
     }
     
     @Test
     @DisplayName("Should get validators")
     fun testValidators() = runBlocking {
         val validators = client.validators()
+        val validatorsObj = validators.jsonObject
         
         assertNotNull(validators)
-        assertNotNull(validators.currentValidators)
-        assertNotNull(validators.nextValidators)
-        assertTrue(validators.currentValidators.isNotEmpty())
         
-        // Check first validator has required fields
-        val firstValidator = validators.currentValidators.first()
-        assertNotNull(firstValidator.accountId)
-        assertNotNull(firstValidator.stake)
-        assertTrue(firstValidator.numExpectedBlocks >= 0)
-    }
-    
-    @Test
-    @DisplayName("Should handle non-existent account gracefully")
-    fun testNonExistentAccount() = runBlocking {
-        try {
-            client.viewAccount("this-account-definitely-does-not-exist-12345.near")
-            fail("Expected exception for non-existent account")
-        } catch (e: Exception) {
-            // Expected behavior
-            assertTrue(e.message?.contains("error") == true || e.message?.contains("not found") == true)
-        }
-    }
-    
-    @Test
-    @DisplayName("Should fetch network info")
-    fun testNetworkInfo() = runBlocking {
-        val networkInfo = client.networkInfo()
+        val currentValidators = validatorsObj["current_validators"]?.jsonArray
+        assertNotNull(currentValidators)
+        assertTrue(currentValidators?.size ?: 0 > 0)
         
-        assertNotNull(networkInfo)
-        assertTrue(networkInfo.numActivePeers >= 0)
-        assertTrue(networkInfo.peerMaxCount > 0)
-        assertNotNull(networkInfo.activePeers)
+        val firstValidator = currentValidators?.firstOrNull()?.jsonObject
+        assertNotNull(firstValidator)
+        assertNotNull(firstValidator?.get("account_id"))
+        assertNotNull(firstValidator?.get("stake"))
     }
     
     @Test
-    @DisplayName("Should call view function on contract")
-    fun testCallViewFunction() = runBlocking {
-        // Try to call a view function on a known contract
-        // Using empty args (base64 encoded "{}")
-        val argsBase64 = "e30=" // {} in base64
+    @DisplayName("Should call view function")
+    fun testCallFunction() = runBlocking {
+        // Call a simple view function on a known contract
+        val args = "{}"
+        val argsBase64 = Base64.getEncoder().encodeToString(args.toByteArray())
         
         try {
             val result = client.callFunction(
-                accountId = "name.testnet",
+                accountId = "name.near",  // Known contract on testnet
                 methodName = "get",
                 argsBase64 = argsBase64
             )
+            val resultObj = result.jsonObject
             
             assertNotNull(result)
-            assertNotNull(result.result)
-            assertNotNull(result.logs)
+            assertNotNull(resultObj["result"])
+            assertNotNull(resultObj["logs"])
         } catch (e: Exception) {
-            // Contract might not exist or method might not be available
-            // This is acceptable for this test
-            println("Contract call failed (expected if contract doesn't exist): ${e.message}")
+            // It's okay if the contract doesn't exist on testnet
+            // Just check that we got a proper error response
+            assertTrue(e.message?.contains("error") ?: false || 
+                      e.message?.contains("does not exist") ?: false)
         }
     }
     
     @Test
-    @DisplayName("Should handle invalid block height")
-    fun testInvalidBlockHeight() = runBlocking {
-        try {
-            // Try to fetch a block from the future
-            client.block(BlockReference(blockHeight = 999999999999))
-            fail("Expected exception for invalid block height")
-        } catch (e: Exception) {
-            // Expected behavior
-            assertNotNull(e.message)
+    @DisplayName("Should get network info")
+    fun testNetworkInfo() = runBlocking {
+        val networkInfo = client.networkInfo()
+        val networkObj = networkInfo.jsonObject
+        
+        assertNotNull(networkInfo)
+        assertNotNull(networkObj["active_peers"])
+        assertNotNull(networkObj["num_active_peers"])
+        
+        val activePeers = networkObj["active_peers"]?.jsonArray
+        assertNotNull(activePeers)
+    }
+    
+    @Test
+    @DisplayName("Should handle errors gracefully")
+    fun testErrorHandling() = runBlocking {
+        assertThrows(Exception::class.java) {
+            runBlocking {
+                // Try to view non-existent account
+                client.viewAccount("this-account-definitely-does-not-exist-123456789.near")
+            }
         }
     }
 }

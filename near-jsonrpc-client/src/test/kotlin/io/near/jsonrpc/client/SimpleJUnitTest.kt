@@ -1,14 +1,13 @@
 package io.near.jsonrpc.client
 
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.*
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
-import io.near.jsonrpc.types.*
 
 class SimpleJUnitTest {
     
@@ -72,11 +71,13 @@ class SimpleJUnitTest {
             .setHeader("Content-Type", "application/json"))
         
         val status = client.status()
+        val statusObj = status.jsonObject
         
         assertNotNull(status)
-        assertEquals("testnet", status.chainId)
-        assertEquals(100000L, status.syncInfo.latestBlockHeight)
-        assertFalse(status.syncInfo.syncing)
+        assertEquals("testnet", statusObj["chain_id"]?.jsonPrimitive?.content)
+        val syncInfo = statusObj["sync_info"]?.jsonObject
+        assertEquals(100000, syncInfo?.get("latest_block_height")?.jsonPrimitive?.int)
+        assertFalse(syncInfo?.get("syncing")?.jsonPrimitive?.boolean ?: true)
     }
     
     @Test
@@ -102,11 +103,12 @@ class SimpleJUnitTest {
             .setHeader("Content-Type", "application/json"))
         
         val account = client.viewAccount("test.near")
+        val accountObj = account.jsonObject
         
         assertNotNull(account)
-        assertEquals("1000000000000000000000000", account.amount)
-        assertEquals("0", account.locked)
-        assertEquals(500L, account.storageUsage)
+        assertEquals("1000000000000000000000000", accountObj["amount"]?.jsonPrimitive?.content)
+        assertEquals("0", accountObj["locked"]?.jsonPrimitive?.content)
+        assertEquals(500, accountObj["storage_usage"]?.jsonPrimitive?.int)
     }
     
     @Test
@@ -126,8 +128,9 @@ class SimpleJUnitTest {
             .setHeader("Content-Type", "application/json"))
         
         val gasPrice = client.gasPrice()
+        val gasPriceObj = gasPrice.jsonObject
         
         assertNotNull(gasPrice)
-        assertEquals("100000000", gasPrice.gasPrice)
+        assertEquals("100000000", gasPriceObj["gas_price"]?.jsonPrimitive?.content)
     }
 }
