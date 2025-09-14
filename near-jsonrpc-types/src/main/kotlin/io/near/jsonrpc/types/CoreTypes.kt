@@ -39,7 +39,8 @@ data class NetworkStatus(
 
 @Serializable
 data class SyncInfo(
-    @SerialName("latest_block_height") val latestBlockHeight: Long = 0
+    @SerialName("latest_block_height") val latestBlockHeight: Long = 0,
+    val syncing: Boolean = false
 )
 
 @Serializable
@@ -56,7 +57,8 @@ data class GasPrice(
 data class AccountView(
     val amount: String = "",
     val locked: String = "",
-    @SerialName("code_hash") val codeHash: String = ""
+    @SerialName("code_hash") val codeHash: String = "",
+    @SerialName("storage_usage") val storageUsage: Long = 0
 )
 
 @Serializable
@@ -147,13 +149,17 @@ data class TransactionResult(
 
 @Serializable
 data class ValidatorStatus(
-    val validators: List<ValidatorInfo> = emptyList()
+    val validators: List<ValidatorInfo> = emptyList(),
+    @SerialName("current_validators") val currentValidators: List<ValidatorInfo> = emptyList(),
+    @SerialName("next_validators") val nextValidators: List<ValidatorInfo> = emptyList()
 )
 
 @Serializable
 data class ValidatorInfo(
-    val account_id: String = "",
-    val stake: String = ""
+    @SerialName("account_id") val accountId: String = "",
+    val stake: String = "",
+    @SerialName("num_expected_blocks") val numExpectedBlocks: Long = 0,
+    @SerialName("num_produced_blocks") val numProducedBlocks: Long = 0
 )
 
 @Serializable
