@@ -73,9 +73,45 @@ subprojects {
     }
 
     publishing {
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/bpolania/NEAR-Kotlin-RPC")
+                credentials {
+                    username = System.getenv("GITHUB_ACTOR") ?: project.findProperty("gpr.user") as String?
+                    password = System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") as String?
+                }
+            }
+        }
         publications {
             create<MavenPublication>("maven") {
                 from(components["java"])
+                
+                pom {
+                    name.set(project.name)
+                    description.set("Type-safe Kotlin client for NEAR Protocol JSON-RPC interface")
+                    url.set("https://github.com/bpolania/NEAR-Kotlin-RPC")
+                    
+                    licenses {
+                        license {
+                            name.set("MIT License")
+                            url.set("https://opensource.org/licenses/MIT")
+                        }
+                    }
+                    
+                    developers {
+                        developer {
+                            id.set("bpolania")
+                            name.set("bpolania")
+                        }
+                    }
+                    
+                    scm {
+                        connection.set("scm:git:git://github.com/bpolania/NEAR-Kotlin-RPC.git")
+                        developerConnection.set("scm:git:ssh://github.com/bpolania/NEAR-Kotlin-RPC.git")
+                        url.set("https://github.com/bpolania/NEAR-Kotlin-RPC")
+                    }
+                }
             }
         }
     }
